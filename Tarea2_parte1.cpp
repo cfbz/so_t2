@@ -7,7 +7,7 @@
 
 using namespace std;
 
-// clase Monitor qparaa barrera reutilizable
+// Clase Monitor qparaa barrera reutilizable
 class Monitor_Barrera
 {
 public:
@@ -62,3 +62,61 @@ private:
     pthread_cond_t cond;  // variable de condicion POSIX
 };
 
+// FunciON HEBRA para VERIFICACION
+void hebra_trabajadora(Monitor_Barrera &barrera, int id, int etapas_totales)
+{
+    for (int e = 0; e < etapas_totales; ++e)
+    {
+        // a) trabajo simulado
+        int tiempo = rand() % 500 + 100; 
+        usleep(tiempo * 1000); 
+
+        // b) imprime antes de esperar
+        printf("[Hebra %d] esperando en etapa %d\n", id, e);
+
+        // c) llama a wait() 
+        barrera.wait();
+
+        // d) imprime despues de pasar
+        printf("[Hebra %d] paso barrera en etapa %d\n", id, e);
+    }
+}
+
+int main(int argc, char *argv[])
+{
+    srand(time(nullptr));
+
+    // valores por defecto
+    int N = 5; // numero hebras
+    int E = 4; // numero etapas
+
+    // leer parametros : ./barrera -n 5 -e 4
+    if (argc >= 5) {
+
+        N = atoi(argv[2]); 
+        E = atoi(argv[4]); 
+    } else {
+        cout << "USO SUGERIDO: " << argv[0] << " -n <num_hebras> -e <etapas>" << endl;
+        cout << "USANDO VALORES DEFECTO: N=5, E=4" << endl;
+    }
+
+    Monitor_Barrera barrera(N);
+    vector<thread> hebras;
+
+    cout << "INICIA VERIFICACION" << endl;
+
+    // crea N hebras
+    for (int i = 0; i < N; ++i)
+    {
+        hebras.push_back(thread(hebra_trabajadora, ref(barrera), i, E));
+    }
+
+    // espera que termine
+    for (auto &h : hebras)
+    {
+        h.join();
+    }
+
+    cout << "TERMINO DE LA EJECUCION" << endl;
+    return 0;
+}
